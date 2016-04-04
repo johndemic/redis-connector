@@ -19,6 +19,7 @@ import org.apache.commons.logging.LogFactory;
 
 import redis.clients.jedis.BinaryJedis;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 import redis.clients.util.SafeEncoder;
@@ -27,9 +28,9 @@ public abstract class RedisUtils
 {
     public static abstract class RedisAction<R>
     {
-        protected volatile BinaryJedis redis;
+        protected volatile JedisStrategy redis;
 
-        R runWithJedis(final Jedis jedis)
+        R runWithJedis(final JedisStrategy jedis)
         {
             redis = jedis;
             return run();
@@ -40,7 +41,7 @@ public abstract class RedisUtils
 
     private static final Log LOGGER = LogFactory.getLog(RedisUtils.class);
 
-    private RedisUtils()
+    protected RedisUtils()
     {
         throw new UnsupportedOperationException("do not instantiate");
     }
@@ -115,34 +116,9 @@ public abstract class RedisUtils
         return patterns;
     }
 
-    public static <R> R run(final JedisPool jedisPool, final RedisAction<R> action)
+    public static <R> R run(final JedisStrategy jedis , final RedisAction<R> action)
     {
-        final Jedis jedis = jedisPool.getResource();
-        boolean brokenResource = false;
-
-        try
-        {
-            try
-            {
-                return action.runWithJedis(jedis);
-            }
-            catch (final JedisConnectionException jce)
-            {
-                brokenResource = true;
-                throw jce;
-            }
-        }
-        finally
-        {
-            if (brokenResource)
-            {
-                jedisPool.returnBrokenResource(jedis);
-            }
-            else
-            {
-                jedisPool.returnResource(jedis);
-            }
-        }
+        return action.runWithJedis(jedis);
 
     }
 }

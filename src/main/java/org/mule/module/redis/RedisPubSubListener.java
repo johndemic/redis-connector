@@ -17,6 +17,7 @@ import org.apache.commons.logging.LogFactory;
 import org.mule.api.callback.SourceCallback;
 
 import redis.clients.jedis.BinaryJedisPubSub;
+import redis.clients.jedis.JedisPubSub;
 import redis.clients.util.SafeEncoder;
 
 public final class RedisPubSubListener extends BinaryJedisPubSub {
@@ -30,27 +31,7 @@ public final class RedisPubSubListener extends BinaryJedisPubSub {
     }
 
     @Override
-    public void onSubscribe(final byte[] channel, final int subscribedChannels) {
-        LOGGER.info("Subscribed to channel: " + SafeEncoder.encode(channel));
-    }
-
-    @Override
-    public void onPSubscribe(final byte[] pattern, final int subscribedChannels) {
-        LOGGER.info("Subscribed to pattern: " + SafeEncoder.encode(pattern));
-    }
-
-    @Override
-    public void onUnsubscribe(final byte[] channel, final int subscribedChannels) {
-        LOGGER.info("Unsubscribed from channel: " + SafeEncoder.encode(channel));
-    }
-
-    @Override
-    public void onPUnsubscribe(final byte[] pattern, final int subscribedChannels) {
-        LOGGER.info("Unubscribed from pattern: " + SafeEncoder.encode(pattern));
-    }
-
-    @Override
-    public void onPMessage(final byte[] pattern, final byte[] channel, final byte[] message) {
+    public void onPMessage(byte[] pattern, byte[] channel, byte[] message) {
         final Map<String, Object> props = new HashMap<String, Object>();
         props.put(RedisConstants.REDIS_PUBSUB_PATTERN, SafeEncoder.encode(pattern));
         props.put(RedisConstants.REDIS_PUBSUB_CHANNEL, SafeEncoder.encode(channel));
@@ -58,9 +39,44 @@ public final class RedisPubSubListener extends BinaryJedisPubSub {
     }
 
     @Override
-    public void onMessage(final byte[] channel, final byte[] message) {
+    public void onMessage(byte[] channel, byte[] message) {
         deliver(message, Collections.singletonMap(RedisConstants.REDIS_PUBSUB_CHANNEL, (Object) SafeEncoder.encode(channel)));
     }
+
+
+    //
+//    @Override
+//    public void onSubscribe(final byte[] channel, final int subscribedChannels) {
+//        LOGGER.info("Subscribed to channel: " + SafeEncoder.encode(channel));
+//    }
+//
+//    @Override
+//    public void onPSubscribe(final byte[] pattern, final int subscribedChannels) {
+//        LOGGER.info("Subscribed to pattern: " + SafeEncoder.encode(pattern));
+//    }
+//
+//    @Override
+//    public void onUnsubscribe(final byte[] channel, final int subscribedChannels) {
+//        LOGGER.info("Unsubscribed from channel: " + SafeEncoder.encode(channel));
+//    }
+//
+//    @Override
+//    public void onPUnsubscribe(final byte[] pattern, final int subscribedChannels) {
+//        LOGGER.info("Unubscribed from pattern: " + SafeEncoder.encode(pattern));
+//    }
+//
+//    @Override
+//    public void onPMessage(final byte[] pattern, final byte[] channel, final byte[] message) {
+//        final Map<String, Object> props = new HashMap<String, Object>();
+//        props.put(RedisConstants.REDIS_PUBSUB_PATTERN, SafeEncoder.encode(pattern));
+//        props.put(RedisConstants.REDIS_PUBSUB_CHANNEL, SafeEncoder.encode(channel));
+//        deliver(message, props);
+//    }
+//
+//    @Override
+//    public void onMessage(final byte[] channel, final byte[] message) {
+//        deliver(message, Collections.singletonMap(RedisConstants.REDIS_PUBSUB_CHANNEL, (Object) SafeEncoder.encode(channel)));
+//    }
 
     private void deliver(final Object payload, final Map<String, Object> properties) {
         try {
